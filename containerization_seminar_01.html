@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Контейнеризация (семинары) Семинар №1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <h1>Урок 1. Механизмы пространства имен</h1>
+
+  <div class="black_box">
+    <h3>Задание №1</h3>
+    <p>Сделать <code>chroot</code> для <code>/bin/bash</code> и перенести в новый корень программу
+      <code>ls</code>.
+    </p>
+  </div>
+
+  <ol>
+    <li>Создаём временную директорию для нового <code>root</code></li>
+    <li>Запускаем <code>`chroot'</code> с указанием этого каталога как новый <code>root</code> и пытаемся запустить в
+      нём
+      шелл <code>bash</code></li>
+    <li>Не получается по причине того что <code>`/bin/bash'</code> в нашем новом <code>root</code> отсутствует</li>
+    <li>Создаём директорию <code>`/bin'</code> в нашем новом <code>root</code></li>
+    <li>Копируем в эту директорию <code>`/bin/bash'</code> из основной системы</li>
+    <li>Запускаем <code>`chroot'</code> и пытаемся запустить в нём шелл <code>bash</code></li>
+    <li>Опять не получается по причине того что для запуска <code>`/bin/bash'</code> в нашем новом <code>root</code> не
+      хватает библиотек</li>
+    <li>При помощи <code>`ldd'</code> определяем какие конкретно библиотеки требуются для запуска
+      <code>`/bin/bash'</code>
+    </li>
+    <li>Создаём директорию для библиотек в нашем новом <code>root</code></li>
+    <li>Копируем требуемые библиотеки</li>
+    <li>Снова запускаем <code>`chroot'</code> и пытаемся запустить в нём шелл <code>bash</code></li>
+    <li>Шелл запустился</li>
+    <li>Пробуем запустить <code>`ls&nbsp;-l'</code></li>
+    <li>Не получается по причине того что <code>`ls'</code> в нашем новом <code>root</code> отсутствует</li>
+    <li>Копируем в директорию <code>`/bin'</code> программу <code>`/bin/ls'</code> из основной системы</li>
+    <li>Запускаем <code>`chroot'</code></li>
+    <li>Пробуем запустить <code>`ls&nbsp;-l'</code></li>
+    <li>Опять не получается по причине того что для запуска <code>`ls'</code> не хватает библиотек</li>
+    <li>При помощи <code>`ldd'</code> определяем какие конкретно библиотеки требуются для запуска <code>`/bin/ls'</code>
+    </li>
+    <li>Копируем требуемые библиотеки</li>
+    <li>Запускаем <code>`chroot'</code></li>
+    <li>Пробуем запустить <code>`ls&nbsp;-l'</code></li>
+    <li>Теперь всё запускается нормально</li>
+  </ol>
+
+  <p>Скриншот с вышеописанными операциями:</p>
+
+  <img src="img/containerization_seminar_01_task_01.png" alt="скриншот задания №1">
+
+  <div class="black_box">
+    <h3>Задание №2</h3>
+    <p>Повторить последовательность команд с <code>`ip'</code> как на семинаре.</p>
+  </div>
+
+  <p>Смотрим какие ip интерфейсы у нас имеются выполнив команду <code>`ip&nbsp;a'</code>:</p>
+  <img src="img/containerization_seminar_01_task_02_01.png" alt="скриншот первого подзадания для задания №2">
+
+  <p>При помощи команды <code>`ip&nbsp;netns&nbsp;list'</code> смотрим какие у нас есть неймспейсы, видим что
+    никаких, при помощи команды <code>`ip&nbsp;netns&nbsp;add'</code> создаём неймспейс с именем
+    <code>testns123</code> и ещё раз выполняем <code>`ip&nbsp;netns&nbsp;list'</code>,
+    видим что неймспейс <code>testns123</code> появился:
+  </p>
+  <img src="img/containerization_seminar_01_task_02_02.png" alt="скриншот второго подзадания для задания №2">
+
+  <p>Запускаем в этом нейспейсе шелл <code>bash</code> выполнив
+    <code>`ip&nbsp;netns&nbsp;exec&nbsp;testns123&nbsp;bash'</code>
+  </p>
+
+  <p>При помощи <code>`ip&nbsp;a'</code> видим что кроме интерфейса <code>loopback</code> у нас ничего нет:</p>
+  <img src="img/containerization_seminar_01_task_02_03.png" alt="скриншот третьего подзадания для задания №2">
+
+  <p>Теперь в основной системе добавляем виртуальную сетевую карту с именем <code>veth0</code> и сразу же тунелируем
+    её на вторую виртуальную карту с именем <code>veth1</code></p>
+  <p>При помощи команды <code>`ip&nbsp;a'</code> убеждаемся что обе виртуальные сетевые карты появились со статусом
+    DOWN и слинкованы друг с другом:</p>
+  <img src="img/containerization_seminar_01_task_02_04.png" alt="скриншот четвёртого подзадания для задания №2">
+
+  <p>Опять находясь в основной системе производим перенос виртуальной сетевой карты <code>veth1</code> в наш
+    контейнер <code>testns123</code> при помощи команды
+    <code>`ip&nbsp;link&nbsp;set&nbsp;veth1&nbsp;netns&nbsp;test123'</code>
+    и при помощи команды <code>`ip&nbsp;a'</code> убеждаемся что виртуальная сетевая карта <code>veth1</code> из
+    основной системы исчезла:
+  </p>
+  <img src="img/containerization_seminar_01_task_02_05.png" alt="скриншот пятого подзадания для задания №2">
+
+  <p>Зато она появилась в контейнере:</p>
+  <img src="img/containerization_seminar_01_task_02_06.png" alt="скриншот шестого подзадания для задания №2">
+
+  <p>Теперь в основной системе присваиваем виртуальной сетевой карте <code>veth0</code> адрес 10.0.0.1 и делаем её
+    активной (статус у данной карты получается не UP сразу, а пока что LOWERLAYERDOWN потому что та карта, с которой
+    она слинкована, <code>veth1</code> в контейнере, пока ещё находится в статусе DOWN, как только <code>veth1</code>
+    в контейнере будет переведена в UP тут тоже статус станет UP):</p>
+  <img src="img/containerization_seminar_01_task_02_07.png" alt="скриншот седьмого подзадания для задания №2">
+
+  <p>А в контейнере присваиваем виртуальной сетевой карте <code>veth1</code> адрес 10.0.0.2 и тоже делаем её
+    активной:</p>
+  <img src="img/containerization_seminar_01_task_02_08.png" alt="скриншот восьмого подзадания для задания №2">
+
+  <p>Теперь у нас основная система и контейнер связаны по сети, команда <code>`ping'</code> проходит как из основной
+    системы до контейнера:</p>
+  <img src="img/containerization_seminar_01_task_02_09.png" alt="скриншот девятого подзадания для задания №2">
+
+  <p>Так и в обратную сторону, от контейнера до основной системы:</p>
+  <img src="img/containerization_seminar_01_task_02_10.png" alt="скриншот десятого подзадания для задания №2">
+
+  <div class="black_box">
+    <h3>Задание №3</h3>
+    <p>Повторить последовательность команд с <code>`unshare'</code> как на семинаре.</p>
+  </div>
+
+  <p>В верхнем окне терминала на скриншотах это обычный терминал, в нижнем окне терминал на котором выполнена
+    команда <code>`sudo&nbsp;unshare&nbsp;--pid&nbsp;--net&nbsp;--fork&nbsp;--mount-proc&nbsp;/bin/bash'</code>
+  </p>
+  <p>Как мы видим произошло ограничение по сети, что видно из вывода команды <code>`ip&nbsp;a'</code>:</p>
+  <img src="img/containerization_seminar_01_task_03_01.png" alt="скриншот первого подзадания для задания №3">
+
+  <p>и по списку процессов, что видно из вывода команды <code>`top'</code>:</p>
+  <img src="img/containerization_seminar_01_task_03_02.png" alt="скриншот второго подзадания для задания №3">
+
+  <p>Всё, домашнее задание по семинару №1 сделано.</p>
+</body>
+</html>
